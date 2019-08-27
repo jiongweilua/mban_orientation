@@ -1,6 +1,6 @@
 ---
-title: "Day 1 mini-project"
-author: "By Anonymous Analyst Extraordinaire"
+title: "Day 1 Mini-Project"
+author: "By Josh Ivanhoe and Jiong Wei Lua"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -44,12 +44,12 @@ listings <- clean_prices(listings)
 calendar <- clean_prices(calendar)
 ```
 
-# A First Tab
+# Visualisations
 
-Column {data-width=650}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
-### A map! 
+### For price per person, we looked at the mean by neighbourhood of all booked rentals over the course the year, to ensure there was demand at the listing’s price. For review score, we simply calculated the mean by neighbourhood of all listings.
 
 ```{r box_1}
 
@@ -63,57 +63,67 @@ boston_coords <- c(left   = -71.1289,
 basemap <- get_map(location = boston_coords,
 				maptype = 'terrain')
 
+subset_listings <- listings %>% 
+    select(id,price,accommodates,longitude,latitude,neighbourhood) %>%
+    mutate(price_per_person = price/accommodates)
+
+ppp_lat_lon <- calendar %>% 
+    left_join(subset_listings,
+              by = c('listing_id' = 'id')) %>%
+    filter(available == FALSE) %>%
+    group_by(neighbourhood) %>%
+    summarise(average_price_per_person = mean(price_per_person, na.rm = TRUE),
+              longitude = mean(longitude,na.rm=TRUE),
+              latitude = mean(latitude,na.rm=TRUE)) %>%
+    filter(average_price_per_person < 1000) 
+    
+library(ggmap)
 ggmap(basemap) + 
-	geom_point(aes(x = longitude, y = latitude), 
-			   data = listings, 
-			   size = .5)
+	geom_point(aes(x = longitude, y = latitude, colour = average_price_per_person), 
+			   data = ppp_lat_lon, 
+			   size = 5) +
+    geom_text(aes(x = longitude, y = latitude, label = neighbourhood), size = 2, data = ppp_lat_lon)+
+    scale_colour_gradient(high = "green", low="red") +
+    xlab('Longitude') +
+    ylab('Latitude') + 
+    labs(title= 'Average Price Per Person PAID by Airbnb Guests',
+         color =' ')
+
 ```
 
-Column {data-width=350}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
-### Box 2
 
-Frequently, visualization for decision-makers are most useful when accompanied by analysis, interpretation, and sometimes a recommendation by the analyst. Feel free to fill in your own commentary on your visualizations in this box or the one below. You can leave the `R` code chunk blank for your commentary box. 
+###  For both review score and price, there appears to be positive correlation between nearby neighbourhoods, at least qualitatively. It is interesting to note there is complete agreement between our two metrics as to which areas are the most "interesting".
 
-```{r box_2}
 
-```
-
-### A different visualization! 
 
 ```{r box_3}
 # Put the code for a supporting visualization here. This visualization should add context and nuance, but expect the main visualization to convey the bulk of your message. 
 
 # This is not a good visualization -- always remember to include titles and legends. Make yours better! 
 
-neighbourhood_lookup <- listings %>% 
-	select(id, neighbourhood)
+neighbourhood_reviews <- listings %>%
+  group_by(neighbourhood) %>%
+  summarise(latitude=mean(latitude, na.rm=TRUE), 
+            longitude=mean(longitude, na.rm=TRUE), 
+            review_scores_rating=mean(review_scores_rating, na.rm=TRUE)) %>%
+    filter(latitude <= 42.37) %>%
+    filter(latitude >=42.32)
 
-calendar %>% 
-	left_join(neighbourhood_lookup, by = c('listing_id' = 'id')) %>% 
-	group_by(neighbourhood, date) %>% 
-	summarise(price = mean(price), n = n()) %>% 
-	filter(n > 100) %>%
-	ggplot() +
-	aes(x = date, y = price, color = neighbourhood) + 
-	geom_line() + 
-	guides(color = FALSE)
+ggmap(basemap) +
+  geom_point(aes(x=longitude, y=latitude, color=review_scores_rating), 
+             data=filter(neighbourhood_reviews, !is.na(review_scores_rating)), 
+             size=5) + 
+    geom_text(aes(x = longitude, y = latitude, label = neighbourhood), size = 2, data = neighbourhood_reviews) + 
+  scale_colour_gradient(high="green", low="red") +
+    xlab('Longitude') +
+    ylab('Latitude') + 
+    labs(title= 'Average Review Score by AirBnb Guests',
+         color =' ')
+
 ```
 
 
-# A Second Tab
-
-
-Column {data-width=650}
------------------------------------------------------------------------
-
-### Box 1
-
-Your dashboard is allowed to have multiple tabs! Only use it if you need it. 
-
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Box 2
 

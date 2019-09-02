@@ -2,14 +2,14 @@
 library(tidyverse)
 library(lubridate) 
 source("../2_data_science/code/clean_prices.R")
-
+setwd('/Users/luajiongwei/Documents/GitHub/mban_orientation/1_orientation/3_optimization')
 ## Script parameters
 # We start by setting values for the variables that we need to choose to determine the output of the script. These values go at the top of the script so that they are easy to find and change. If we want to turn this script into a function, these parameters would be our input arguments.
 
 # These parameters indicate the criteria we will use to filter the listings
 min_score <- 90
 min_reviews <- 5
-allowed_neighbourhoods <- c("Downtown","Back Bay","Chinatown")
+allowed_neighbourhoods <- c("Downtown","Back Bay","Chinatown", "WestEnd", "Beacon Hill", "Allston-Brighton")
 
 # These parameters describe the dates and length of stay for which we want to check availibility.
 nights <- 3
@@ -18,6 +18,8 @@ dates = ymd(args[[1]])
 print(dates)
 # If you want to run this script in RStudio, set the dates manually
 #dates <- ymd(c("2019-08-30","2019-09-27","2019-10-25", "2019-11-25"))
+dates <- ymd(c("2019-09-06"))
+
 
 
 # These parameters the amenities that we will add as columns in our data
@@ -42,7 +44,7 @@ filtered_listings <- listings %>%
 
 date_df <- tibble(
 	stay = rep(1:length(dates), nights), 
-	date = dates + rep(1:nights, each = length(dates)) - 1) 
+	date = dates + rep(1:nights, each = length(dates)) - 1)
 
 # calculate the prices for available listings. 
 # The result is a data_frame with columns for each of the stays we want -- a listing is included if it is available for at least one of them. 
@@ -76,3 +78,4 @@ filtered_listings %>%
 	write_csv('filtered_listings.csv')
 
 print("Success!")
+
